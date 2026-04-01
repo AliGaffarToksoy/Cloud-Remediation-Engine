@@ -1,0 +1,1 @@
+Sentinel-Ops is an AI-powered autonomous cloud security platform that detects and remediates misconfigurations in real time. Built with Terraform, LocalStack, FastAPI, and event-driven architecture, it simulates enterprise-grade cloud threats locally and applies instant auto-remediation with zero cost.
