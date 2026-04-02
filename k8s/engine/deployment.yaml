@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-ops-worker
+  labels:
+    app: security-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: security-worker
+  template:
+    metadata:
+      labels:
+        app: security-worker
+    spec:
+      containers:
+      - name: worker
+        image: cloud-remediation-worker:v2
+        imagePullPolicy: Never # İmajı internetten indirme, içindeki v2'yi kullan
+        env:
+        # İşte sihir burada! Minikube içinden Mac'teki LocalStack'e bağlanan köprü:
+        - name: AWS_ENDPOINT_URL
+          value: "http://host.minikube.internal:4566"
