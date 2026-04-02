@@ -1,0 +1,90 @@
+import boto3
+import time
+import json
+import os # Yeni ekledik!
+
+# Kurumsal Kural: Ayarları kodun içine gömme, ortamdan (environment) oku!
+AWS_REGION = os.environ.get("AWS_REGION", "eu-central-1")
+ENDPOINT_URL = os.environ.get("AWS_ENDPOINT_URL", "http://127.0.0.1:4566")
+QUEUE_NAME = os.environ.get("QUEUE_NAME", "security-alerts-queue")
+
+# AWS İstemcileri
+sqs = boto3.client('sqs', region_name=AWS_REGION, endpoint_url=ENDPOINT_URL, aws_access_key_id="test", aws_secret_access_key="test")
+s3 = boto3.client('s3', region_name=AWS_REGION, endpoint_url=ENDPOINT_URL, aws_access_key_id="test", aws_secret_access_key="test")
+
+
+def get_queue_url():
+    response = sqs.get_queue_url(QueueName=QUEUE_NAME)
+    return response['QueueUrl']
+
+
+def ai_security_analysis(bucket_name):
+    # İleride buraya gerçek bir Yapay Zeka modeli (LLM) bağlanabilir.
+    # Şimdilik "Kural Tabanlı" (Rule-based) zeka ile bucket'ın Public ayarını kontrol ediyoruz.
+    print(f"🔍 [ANALİZ MOTORU] '{bucket_name}' inceleniyor...")
+    try:
+        response = s3.get_public_access_block(Bucket=bucket_name)
+        # Eğer block ayarları false ise, dışarıya açıktır!
+        config = response['PublicAccessBlockConfiguration']
+        if not config['BlockPublicAcls'] or not config['BlockPublicPolicy']:
+            return True  # Zafiyet Var!
+    except Exception as e:
+        # Konfigürasyon hiç yoksa da varsayılan olarak tehlikelidir
+        return True
+    return False
+
+
+def auto_remediate(bucket_name):
+    print(f"🚨 [MÜDAHALE MOTORU] Zafiyet tespit edildi! '{bucket_name}' dış dünyaya kapatılıyor...")
+    s3.put_public_access_block(
+        Bucket=bucket_name,
+        PublicAccessBlockConfiguration={
+            'BlockPublicAcls': True,
+            'IgnorePublicAcls': True,
+            'BlockPublicPolicy': True,
+            'RestrictPublicBuckets': True
+        }
+    )
+    print("✅ [BAŞARILI] Zafiyet kapatıldı. Sistem güvenli.\n")
+
+
+def start_worker():
+    queue_url = get_queue_url()
+    print(f"🛡️ Sentinel-Ops Motoru devrede. Kuyruk dinleniyor: {QUEUE_NAME}...")
+
+    while True:
+        # SQS'ten mesaj bekle (Long polling)
+        response = sqs.receive_message(
+            QueueUrl=queue_url,
+            MaxNumberOfMessages=1,
+            WaitTimeSeconds=5
+        )
+
+        if 'Messages' in response:
+            for message in response['Messages']:
+                # Kuyruktan gelen olayı (event) oku
+                body = json.loads(message['Body'])
+                bucket_name = body.get('bucket_name')
+
+                print(f"\n📥 [YENİ OLAY] Olay alındı. Hedef: {bucket_name}")
+
+                # Zafiyet analizi yap
+                is_vulnerable = ai_security_analysis(bucket_name)
+
+                if is_vulnerable:
+                    auto_remediate(bucket_name)
+                else:
+                    print("✅ [GÜVENLİ] Yapılandırma kurallara uygun.")
+
+                # İşlenen mesajı kuyruktan sil
+                sqs.delete_message(
+                    QueueUrl=queue_url,
+                    ReceiptHandle=message['ReceiptHandle']
+                )
+        else:
+            print(".", end="", flush=True)  # Kuyruk boşsa bekleme animasyonu
+            time.sleep(2)
+
+
+if __name__ == "__main__":
+    start_worker()
