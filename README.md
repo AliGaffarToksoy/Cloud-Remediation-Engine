@@ -34,25 +34,54 @@ The system continuously monitors cloud events, evaluates them using AI, and trig
 
 ## 🏗️ System Architecture
 
-### 🔁 Event-Driven Security Pipeline
+### 🔁 AI-Powered Event-Driven Remediation Pipeline
 
+```mermaid
+flowchart LR
+
+classDef infra fill:#1f77b4,color:#fff,stroke:#0d3b66,stroke-width:2px
+classDef event fill:#ff7f0e,color:#fff,stroke:#a04e00,stroke-width:2px
+classDef ai fill:#2ca02c,color:#fff,stroke:#145a14,stroke-width:2px
+classDef worker fill:#9467bd,color:#fff,stroke:#4b2c73,stroke-width:2px
+classDef cloud fill:#17becf,color:#fff,stroke:#0b5f66,stroke-width:2px
+classDef monitor fill:#d62728,color:#fff,stroke:#7f1a1a,stroke-width:2px
+
+A[🧱 Terraform<br/>Misconfigured Resources]:::infra
+B[☁️ LocalStack<br/>AWS Simulation]:::cloud
+C[📡 Cloud Events<br/>S3 / IAM / etc.]:::event
+D[📨 SQS Queue<br/>Event Bus]:::event
+E[🤖 AI Security Analyzer<br/>FastAPI + ML/NLP]:::ai
+F[🧠 Decision Engine<br/>Risk Evaluation]:::ai
+G[⚡ Remediation Worker<br/>Auto-Fix Engine]:::worker
+H[🔐 AWS API<br/>Apply Security Fix]:::cloud
+I[📊 Observability<br/>Prometheus + Grafana]:::monitor
+
+A --> B --> C --> D --> E --> F --> G --> H
+G --> I
+E --> I
 ```
-Terraform → LocalStack (AWS Simulation)
-        ↓
-Cloud Events (S3, IAM, etc.)
-        ↓
-SQS Queue (Event Bus)
-        ↓
-AI Security Analyzer (FastAPI + ML/NLP)
-        ↓
-Decision Engine
-        ↓
-Auto-Remediation Worker
-        ↓
-AWS API (Fix Misconfiguration)
-        ↓
-Monitoring (Prometheus + Grafana)
-```
+
+---
+
+### 🧠 Architectural Flow
+
+1. **Terraform** provisions intentionally misconfigured cloud resources  
+2. **LocalStack** simulates AWS services in a fully local environment  
+3. Cloud events (S3, IAM, etc.) are emitted and pushed into **SQS**  
+4. The **AI Analyzer** consumes events and evaluates security risks  
+5. The **Decision Engine** determines whether remediation is required  
+6. The **Worker Service** executes automated fixes via AWS APIs  
+7. All actions and metrics are exported to **Prometheus & Grafana**  
+
+---
+
+### ⚡ Key Architectural Principles
+
+- **Event-Driven Design** → Fully asynchronous and scalable  
+- **AI-Augmented Decision Making** → Intelligent security analysis  
+- **Autonomous Remediation** → Zero human intervention  
+- **Cloud-Native Deployment** → Kubernetes-ready microservices  
+- **Observability First** → Real-time metrics and insights  
 
 ---
 
@@ -151,132 +180,37 @@ Real-time dashboards showing:
 
 ```
 cloud-remediation-engine/
-├── README.md                        # Project documentation
-│
-├── infrastructure/                 # 🏗️ Infrastructure as Code (Terraform)
-│   ├── main.tf                      # Defines misconfigured AWS resources (S3, IAM, etc.)
-│   ├── terraform.tfstate            # Terraform state file (generated)
-│   └── terraform.tfstate.backup     # Backup of Terraform state
-│
-├── localstack/                     # ☁️ Local AWS cloud simulation
-│   ├── docker-compose.yml           # LocalStack container configuration
-│   └── volume/                      # Persistent data & logs
-│       ├── cache/                   # Cached service metadata & certificates
-│       ├── lib/                     # Internal LocalStack libraries
-│       ├── logs/                    # Runtime logs
-│       └── tmp/                     # Temporary files
-│
-├── k8s/                            # ☸️ Kubernetes manifests
-│   ├── argocd/                      # GitOps deployment configurations
-│   ├── engine/                      # Core remediation engine deployment
-│   │   └── deployment.yaml          # Worker deployment definition
-│   └── monitoring/                  # Prometheus & Grafana configs (planned/optional)
-│
-├── services/                       # 💻 Microservices
-│   └── remediation-worker/          # Autonomous remediation engine
-│       ├── Dockerfile               # Container definition
-│       ├── requirements.txt         # Python dependencies
-│       ├── trigger.py               # Event trigger logic (SQS / simulation)
-│       └── worker.py                # Core remediation logic (auto-fix engine)
+├── README.md
+├── infrastructure/
+├── localstack/
+├── k8s/
+├── services/
 ```
-
----
-
-### 🧠 Structure Highlights
-
-- **Infrastructure Layer** → Simulates insecure cloud resources using Terraform  
-- **LocalStack Layer** → Fully local AWS environment (S3, SQS, etc.)  
-- **Kubernetes Layer** → Deploys and manages services using cloud-native principles  
-- **Service Layer** → Contains the autonomous remediation logic  
-- **GitOps Ready** → ArgoCD directory prepared for continuous deployment  
-
----
-
-### 🔐 Design Philosophy
-
-- Separation of concerns (infra / runtime / services)  
-- Cloud-native first approach  
-- Fully reproducible local environment  
-- Scalable to real AWS with minimal changes  
-
----
-
-## ✨ Key Features
-
-- 🧠 AI-powered security analysis  
-- ⚡ Real-time event-driven processing  
-- 🔄 Autonomous remediation (auto-fix)  
-- ☁️ Fully local cloud simulation (zero cost)  
-- 🔐 Cloud Security Posture Management (CSPM)  
-- ☸️ Kubernetes-native deployment  
-- 📊 Enterprise-grade observability  
-- 🚀 GitOps-based continuous deployment  
 
 ---
 
 ## 🚀 Setup & Installation (High-Level)
 
 ### 1️⃣ Start LocalStack
-
 ```
 docker-compose up -d localstack
 ```
 
----
-
-### 2️⃣ Deploy Misconfigured Resources
-
+### 2️⃣ Deploy Infrastructure
 ```
-cd infrastructure/terraform
 terraform init
 terraform apply
 ```
 
----
-
-### 3️⃣ Start Kubernetes Cluster
-
+### 3️⃣ Start Kubernetes
 ```
 minikube start --driver=docker
 ```
 
----
-
-### 4️⃣ Deploy Services (ArgoCD / kubectl)
-
+### 4️⃣ Deploy Services
 ```
 kubectl apply -f k8s/
 ```
-
----
-
-### 5️⃣ Start Monitoring Stack
-
-```
-kubectl apply -f monitoring/
-```
-
----
-
-## 📊 Example Scenario
-
-1. A public S3 bucket is created via Terraform  
-2. Event is sent to SQS  
-3. AI analyzes configuration  
-4. AI detects vulnerability  
-5. Worker automatically fixes it  
-6. Grafana dashboard updates in real time  
-
----
-
-## 🧠 What This Project Demonstrates
-
-- Event-driven cloud architecture  
-- AI integration in DevOps workflows  
-- Autonomous infrastructure remediation  
-- Kubernetes-based microservices  
-- Real-world cloud security scenarios  
-- End-to-end DevOps lifecycle  
 
 ---
 
@@ -284,19 +218,4 @@ kubectl apply -f monitoring/
 
 **Ali Gaffar Toksoy**  
 
-DevOps • Cloud • AI Systems  
-
 > "Modern infrastructure shouldn't just run — it should think, detect, and heal itself."
-
----
-
-## ⭐ Final Note
-
-This project represents a **next-generation DevOps + AI convergence**:
-
-A system that doesn't just monitor infrastructure —  
-but actively **protects and heals it in real time**.
-
-If you found this project valuable, consider giving it a ⭐
-
----
