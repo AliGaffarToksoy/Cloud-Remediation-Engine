@@ -1,7 +1,7 @@
 import boto3
 import time
 import json
-import os # Yeni ekledik!
+import os
 
 # Kurumsal Kural: Ayarları kodun içine gömme, ortamdan (environment) oku!
 AWS_REGION = os.environ.get("AWS_REGION", "eu-central-1")
@@ -19,17 +19,16 @@ def get_queue_url():
 
 
 def ai_security_analysis(bucket_name):
-    # İleride buraya gerçek bir Yapay Zeka modeli (LLM) bağlanabilir.
-    # Şimdilik "Kural Tabanlı" (Rule-based) zeka ile bucket'ın Public ayarını kontrol ediyoruz.
+
     print(f"🔍 [ANALİZ MOTORU] '{bucket_name}' inceleniyor...")
     try:
         response = s3.get_public_access_block(Bucket=bucket_name)
-        # Eğer block ayarları false ise, dışarıya açıktır!
+
         config = response['PublicAccessBlockConfiguration']
         if not config['BlockPublicAcls'] or not config['BlockPublicPolicy']:
-            return True  # Zafiyet Var!
+            return True
     except Exception as e:
-        # Konfigürasyon hiç yoksa da varsayılan olarak tehlikelidir
+
         return True
     return False
 
@@ -53,7 +52,7 @@ def start_worker():
     print(f"🛡️ Sentinel-Ops Motoru devrede. Kuyruk dinleniyor: {QUEUE_NAME}...")
 
     while True:
-        # SQS'ten mesaj bekle (Long polling)
+
         response = sqs.receive_message(
             QueueUrl=queue_url,
             MaxNumberOfMessages=1,
