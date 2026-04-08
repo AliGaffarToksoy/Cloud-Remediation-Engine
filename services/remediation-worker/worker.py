@@ -3,12 +3,12 @@ import time
 import json
 import os
 
-# Kurumsal Kural: Ayarları kodun içine gömme, ortamdan (environment) oku!
+
 AWS_REGION = os.environ.get("AWS_REGION", "eu-central-1")
 ENDPOINT_URL = os.environ.get("AWS_ENDPOINT_URL", "http://127.0.0.1:4566")
 QUEUE_NAME = os.environ.get("QUEUE_NAME", "security-alerts-queue")
 
-# AWS İstemcileri
+
 sqs = boto3.client('sqs', region_name=AWS_REGION, endpoint_url=ENDPOINT_URL, aws_access_key_id="test", aws_secret_access_key="test")
 s3 = boto3.client('s3', region_name=AWS_REGION, endpoint_url=ENDPOINT_URL, aws_access_key_id="test", aws_secret_access_key="test")
 
@@ -61,13 +61,13 @@ def start_worker():
 
         if 'Messages' in response:
             for message in response['Messages']:
-                # Kuyruktan gelen olayı (event) oku
+
                 body = json.loads(message['Body'])
                 bucket_name = body.get('bucket_name')
 
                 print(f"\n📥 [YENİ OLAY] Olay alındı. Hedef: {bucket_name}")
 
-                # Zafiyet analizi yap
+
                 is_vulnerable = ai_security_analysis(bucket_name)
 
                 if is_vulnerable:
@@ -75,13 +75,13 @@ def start_worker():
                 else:
                     print("✅ [GÜVENLİ] Yapılandırma kurallara uygun.")
 
-                # İşlenen mesajı kuyruktan sil
+
                 sqs.delete_message(
                     QueueUrl=queue_url,
                     ReceiptHandle=message['ReceiptHandle']
                 )
         else:
-            print(".", end="", flush=True)  # Kuyruk boşsa bekleme animasyonu
+            print(".", end="", flush=True)
             time.sleep(2)
 
 
